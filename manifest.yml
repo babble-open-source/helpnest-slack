@@ -1,0 +1,30 @@
+display_information:
+  name: HelpNest
+  description: Search your HelpNest help center from Slack
+  background_color: "#C8622A"
+
+features:
+  bot_user:
+    display_name: HelpNest
+    always_online: true
+  slash_commands:
+    - command: /helpnest
+      description: Search HelpNest articles
+      usage_hint: "[search query]"
+      should_escape: false
+    - command: /helpnest-ask
+      description: Ask a question answered by your help center
+      usage_hint: "[your question]"
+      should_escape: false
+
+oauth_config:
+  scopes:
+    bot:
+      - commands
+      - chat:write
+      - chat:write.public
+
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
