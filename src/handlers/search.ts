@@ -1,4 +1,5 @@
-import type { SlashCommand, Middleware, SlashCommandMiddlewareArgs } from '@slack/bolt';
+import type { SlashCommand, Middleware, SlackCommandMiddlewareArgs } from '@slack/bolt';
+import type { KnownBlock } from '@slack/types';
 import type { HelpNestClient } from '../helpnest.js';
 import type { HelpNestArticle } from '../types.js';
 
@@ -7,7 +8,7 @@ export function buildArticleBlocks(
   query: string,
   baseUrl: string,
 ) {
-  const blocks: object[] = [
+  const blocks: KnownBlock[] = [
     {
       type: 'section',
       text: {
@@ -66,7 +67,7 @@ export function buildArticleBlocks(
 export function buildSearchHandler(
   client: HelpNestClient,
   baseUrl: string,
-): Middleware<SlashCommandMiddlewareArgs> {
+): Middleware<SlackCommandMiddlewareArgs> {
   return async ({ command, ack, respond }) => {
     await ack();
 

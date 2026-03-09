@@ -1,4 +1,4 @@
-import type { SlashCommand, Middleware, SlashCommandMiddlewareArgs } from '@slack/bolt';
+import type { SlashCommand, Middleware, SlackCommandMiddlewareArgs } from '@slack/bolt';
 import type { HelpNestClient } from '../helpnest.js';
 import type { HelpNestArticle } from '../types.js';
 
@@ -6,7 +6,7 @@ const MAX_CONTEXT_ARTICLES = 3;
 
 export function buildAskHandler(
   client: HelpNestClient,
-): Middleware<SlashCommandMiddlewareArgs> {
+): Middleware<SlackCommandMiddlewareArgs> {
   return async ({ command, ack, respond }) => {
     // Acknowledge immediately — Slack requires a response within 3 seconds.
     // We send a holding message so the user knows work is in progress.

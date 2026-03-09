@@ -1,4 +1,4 @@
-import type { Middleware, BlockAction, ButtonAction, BlockButtonAction } from '@slack/bolt';
+import type { Middleware, SlackActionMiddlewareArgs, BlockAction, ButtonAction } from '@slack/bolt';
 
 interface SharedArticlePayload {
   id: string;
@@ -8,23 +8,24 @@ interface SharedArticlePayload {
   collectionName: string | null;
 }
 
-export function buildActionsHandler(): Middleware<BlockAction> {
+export function buildActionsHandler(): Middleware<SlackActionMiddlewareArgs<BlockAction<ButtonAction>>> {
   return async ({ ack, action, body, client, logger }) => {
     await ack();
 
-    // action is typed as the union of all block action types; narrow to button
-    const buttonAction = action as ButtonAction;
-
-    let payload: SharedArticlePayload;
-    try {
-      payload = JSON.parse(buttonAction.value) as SharedArticlePayload;
-    } catch {
-      logger.error('[actions] Failed to parse action value:', buttonAction.value);
+    if (!action.value) {
+      logger.error('[actions] No action value — cannot share article');
       return;
     }
 
-    const channelId = (body as BlockButtonAction['body'] & { channel?: { id: string } })
-      ?.channel?.id;
+    let payload: SharedArticlePayload;
+    try {
+      payload = JSON.parse(action.value) as SharedArticlePayload;
+    } catch {
+      logger.error('[actions] Failed to parse action value:', action.value);
+      return;
+    }
+
+    const channelId = body.channel?.id;
 
     if (!channelId) {
       logger.error('[actions] No channel ID in action body — cannot post to channel');
