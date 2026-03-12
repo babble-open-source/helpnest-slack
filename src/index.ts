@@ -48,7 +48,7 @@ const app = createSlackApp();
 // ---------------------------------------------------------------------------
 
 app.command('/helpnest', buildSearchHandler(helpnestClient, HELPNEST_URL));
-app.command('/helpnest-ask', buildAskHandler(helpnestClient));
+app.command('/helpnest-ask', buildAskHandler(helpnestClient, HELPNEST_URL));
 
 // ---------------------------------------------------------------------------
 // Block action handlers

@@ -1,4 +1,4 @@
-import type { HelpNestArticle, ApiSearchResponse, ApiArticle } from './types.js';
+import type { HelpNestArticle, ApiSearchResponse, ApiArticle, ConversationCreated, AiAnswer, SseEvent } from './types.js';
 
 interface HelpNestClientOptions {
   baseUrl: string;
@@ -78,6 +78,81 @@ export class HelpNestClient {
     const article = (await response.json()) as ApiArticle;
 
     return this.mapArticle(article);
+  }
+
+  /**
+   * Create a new conversation session for the Slack bot.
+   * Returns a sessionToken used to send messages as a customer.
+   */
+  async createConversation(customerName: string): Promise<ConversationCreated> {
+    const url = `${this.baseUrl}/api/conversations`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workspaceSlug: this.workspaceSlug,
+        customerName,
+        customerEmail: null,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new HelpNestError(
+        `Failed to create conversation: ${response.status} ${response.statusText}`,
+        response.status,
+      );
+    }
+
+    return (await response.json()) as ConversationCreated;
+  }
+
+  /**
+   * Send a message to the AI agent and collect the full streamed answer.
+   * Consumes the SSE stream and returns the complete answer text + sources.
+   */
+  async askAI(
+    conversationId: string,
+    sessionToken: string,
+    question: string,
+  ): Promise<AiAnswer> {
+    const url = `${this.baseUrl}/api/conversations/${encodeURIComponent(conversationId)}/messages`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken, content: question }),
+    });
+
+    if (!response.ok) {
+      throw new HelpNestError(
+        `AI request failed: ${response.status} ${response.statusText}`,
+        response.status,
+      );
+    }
+
+    // Consume the full SSE stream then parse line by line.
+    // Slack's response_url supports delayed responses up to 30 minutes,
+    // so waiting for the complete stream (typically 3-8 seconds) is fine.
+    const raw = await response.text();
+
+    let answer = '';
+    let escalated = false;
+    const sources: AiAnswer['sources'] = [];
+
+    for (const line of raw.split('\n')) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const event = JSON.parse(line.slice(6)) as SseEvent;
+        if (event.type === 'text') answer += event.text;
+        if (event.type === 'sources') sources.push(...event.sources);
+        if (event.type === 'action' && event.action === 'escalate') escalated = true;
+      } catch {
+        // skip malformed lines
+      }
+    }
+
+    return { answer: answer.trim(), sources, escalated };
   }
 }
 
