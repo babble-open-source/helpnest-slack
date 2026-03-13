@@ -1,4 +1,4 @@
-# helpnest-slack
+# @helpnest/slack
 
 Search your HelpNest help center directly from Slack.
 
